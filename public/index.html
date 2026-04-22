@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PsicoDoc AI — Assistente Clínico</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #2b4c8c; --primary-dark: #1e3a6e; --primary-light: #3d6dbf;
+    --accent: #7c3aed; --accent-light: #ede9fe;
+    --success: #059669; --danger: #dc2626; --warn: #d97706;
+    --bg: #f0f4f8; --surface: #ffffff; --surface2: #f8fafc;
+    --border: #e2e8f0; --text: #1e293b; --text2: #475569; --text3: #94a3b8;
+    --radius: 10px; --shadow: 0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);
+  }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+  header { background: var(--primary); color: #fff; padding: 0 20px; height: 52px; display: flex; align-items: center; gap: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.2); flex-shrink: 0; }
+  .logo { font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .logo-icon { background: rgba(255,255,255,.18); border-radius: 8px; width: 30px; height: 30px; display: grid; place-items: center; font-size: 1rem; }
+  .header-spacer { flex: 1; }
+  .hbtn { display: flex; align-items: center; gap: 5px; background: rgba(255,255,255,.12); border: none; color: #fff; border-radius: 18px; padding: 4px 12px; font-size: .8rem; cursor: pointer; font-family: inherit; transition: background .15s; }
+  .hbtn:hover { background: rgba(255,255,255,.22); }
+  .api-dot { width: 7px; height: 7px; border-radius: 50%; background: #6ee7b7; flex-shrink: 0; }
+  .api-dot.bad { background: #fca5a5; }
+  .api-dot.warn { background: #fde68a; }
+  .timer { font-size: .9rem; font-weight: 600; font-variant-numeric: tabular-nums; background: rgba(255,255,255,.12); padding: 4px 10px; border-radius: 18px; letter-spacing: .4px; }
+  .timer.rec { background: rgba(220,38,38,.6); animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.65} }
+
+  .app { flex: 1; display: grid; grid-template-columns: 290px 1fr; overflow: hidden; height: calc(100vh - 52px); }
+
+  /* LEFT */
+  .left { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; }
+  .sec { padding: 14px; border-bottom: 1px solid var(--border); }
+  .sec-title { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text3); margin-bottom: 10px; }
+  label { font-size: .78rem; color: var(--text2); font-weight: 500; display: block; margin-bottom: 3px; }
+  input, select, textarea { width: 100%; border: 1.5px solid var(--border); border-radius: 7px; padding: 7px 9px; font-size: .85rem; color: var(--text); background: var(--surface2); font-family: inherit; transition: border-color .15s; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(43,76,140,.1); }
+  .field { margin-bottom: 9px; }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 7px 13px; border-radius: 7px; border: none; cursor: pointer; font-size: .83rem; font-weight: 600; font-family: inherit; transition: all .15s; white-space: nowrap; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-p { background: var(--primary); color: #fff; }
+  .btn-p:hover:not(:disabled) { background: var(--primary-dark); }
+  .btn-d { background: var(--danger); color: #fff; }
+  .btn-d:hover:not(:disabled) { background: #b91c1c; }
+  .btn-g { background: transparent; color: var(--text2); border: 1.5px solid var(--border); }
+  .btn-g:hover:not(:disabled) { background: var(--bg); color: var(--text); }
+  .btn-full { width: 100%; }
+  .btn-sm { padding: 5px 9px; font-size: .78rem; border-radius: 6px; }
+
+  .mode-toggle { display: flex; border-radius: 7px; overflow: hidden; border: 1.5px solid var(--border); margin-bottom: 10px; }
+  .mode-btn { flex: 1; padding: 6px; font-size: .75rem; font-weight: 600; border: none; background: var(--surface2); color: var(--text2); cursor: pointer; font-family: inherit; transition: all .15s; }
+  .mode-btn.active { background: var(--primary); color: #fff; }
+
+  .waveform { height: 32px; background: var(--surface2); border-radius: 7px; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; gap: 2px; padding: 0 8px; overflow: hidden; margin-bottom: 8px; }
+  .wb { width: 3px; background: var(--primary-light); border-radius: 2px; height: 5px; transition: height .1s; }
+  .waveform.active .wb { animation: wv 1.1s ease-in-out infinite; }
+  .wb:nth-child(1){animation-delay:0s}.wb:nth-child(2){animation-delay:.1s}.wb:nth-child(3){animation-delay:.2s}.wb:nth-child(4){animation-delay:.3s}.wb:nth-child(5){animation-delay:.4s}.wb:nth-child(6){animation-delay:.5s}.wb:nth-child(7){animation-delay:.4s}.wb:nth-child(8){animation-delay:.3s}.wb:nth-child(9){animation-delay:.2s}.wb:nth-child(10){animation-delay:.1s}
+  @keyframes wv{0%,100%{height:4px}50%{height:22px}}
+
+  .rec-row { display: flex; gap: 7px; margin-bottom: 7px; }
+  .rec-row .btn { flex: 1; }
+  .live-badge { display: none; align-items: center; gap: 4px; font-size: .68rem; color: var(--success); font-weight: 700; margin-bottom: 6px; }
+  .live-badge.show { display: inline-flex; }
+  .ldot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: blink 1s ease-in-out infinite; }
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+  .upload-area { border: 2px dashed var(--border); border-radius: 7px; padding: 14px; text-align: center; cursor: pointer; color: var(--text2); font-size: .8rem; transition: all .2s; }
+  .upload-area:hover { border-color: var(--primary-light); color: var(--primary); background: #eff6ff; }
+
+  .transcript-box { flex: 1; display: flex; flex-direction: column; }
+  .transcript-area { flex: 1; min-height: 110px; max-height: 260px; border: 1.5px solid var(--border); border-radius: 7px; padding: 9px; font-size: .85rem; line-height: 1.6; resize: none; background: var(--surface2); font-family: inherit; overflow-y: auto; }
+  .transcript-area:focus { outline: none; border-color: var(--primary-light); }
+
+  .warn-banner { background: #fef3c7; border: 1.5px solid #fbbf24; color: #92400e; padding: 7px 10px; border-radius: 7px; font-size: .75rem; display: none; margin-bottom: 7px; }
+  .warn-banner.show { display: block; }
+
+  /* RIGHT */
+  .right { display: flex; flex-direction: column; overflow: hidden; }
+  .tabs { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 16px 0; display: flex; gap: 4px; flex-wrap: wrap; flex-shrink: 0; }
+  .tab { padding: 6px 12px; border-radius: 7px 7px 0 0; border: 1.5px solid var(--border); border-bottom: none; background: var(--surface2); color: var(--text2); font-size: .78rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s; }
+  .tab:hover { background: var(--bg); }
+  .tab.active { background: var(--surface); color: var(--primary); border-bottom-color: var(--surface); }
+
+  .toolbar { background: var(--surface); padding: 10px 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .btn-gen { background: linear-gradient(135deg,var(--accent),#9333ea); color: #fff; border: none; padding: 8px 18px; font-size: .88rem; font-weight: 700; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-family: inherit; transition: all .2s; }
+  .btn-gen:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(124,58,237,.35); }
+  .btn-gen:disabled { opacity: .6; transform: none; cursor: not-allowed; }
+  .spin { width: 15px; height: 15px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; display: none; }
+  .generating .spin { display: inline-block; }
+  .generating .btn-icon { display: none; }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .sp { flex: 1; }
+  .doc-label { font-size: .8rem; color: var(--text2); }
+
+  .editor-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 14px 16px; gap: 10px; }
+  .editor { flex: 1; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 14px; font-size: .875rem; line-height: 1.8; color: var(--text); background: var(--surface); resize: none; font-family: inherit; overflow-y: auto; }
+  .editor:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(43,76,140,.1); }
+
+  .bottom-bar { background: var(--surface); border-top: 1px solid var(--border); padding: 10px 16px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
+  .char-count { font-size: .72rem; color: var(--text3); }
+
+  /* Toast */
+  .toasts { position: fixed; bottom: 16px; right: 16px; display: flex; flex-direction: column; gap: 7px; z-index: 9999; }
+  .toast { background: #1e293b; color: #fff; padding: 9px 14px; border-radius: 9px; font-size: .83rem; box-shadow: var(--shadow); max-width: 300px; animation: tin .2s ease-out; display: flex; align-items: center; gap: 7px; }
+  .toast.ok { background: var(--success); }
+  .toast.err { background: var(--danger); }
+  .toast.warn { background: var(--warn); }
+  @keyframes tin{from{transform:translateY(10px);opacity:0}}
+
+  /* Modal */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity .2s; }
+  .overlay.open { opacity: 1; pointer-events: all; }
+  .modal { background: var(--surface); border-radius: 13px; box-shadow: 0 8px 32px rgba(0,0,0,.15); padding: 24px; width: 500px; max-width: 95vw; max-height: 86vh; overflow-y: auto; transform: translateY(8px); transition: transform .2s; }
+  .overlay.open .modal { transform: none; }
+  .modal h3 { font-size: 1rem; color: var(--primary); margin-bottom: 12px; }
+  .modal p { font-size: .82rem; color: var(--text2); margin-bottom: 10px; line-height: 1.5; }
+  .modal-foot { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+  .info-box { background: var(--accent-light); border-radius: 7px; padding: 9px 11px; font-size: .77rem; color: #5b21b6; margin-top: 8px; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><div class="logo-icon">🧠</div> PsicoDoc AI</div>
+  <div class="timer" id="timer">00:00</div>
+  <div class="header-spacer"></div>
+  <button class="hbtn" onclick="openModal()" title="Configurar chaves de API">
+    <div class="api-dot" id="apiBadge"></div>
+    <span id="apiLabel">⚙️ Chaves</span>
+  </button>
+</header>
+
+<div class="app">
+
+  <!-- LEFT -->
+  <div class="left">
+    <div class="sec">
+      <div class="sec-title">Dados do Paciente</div>
+      <div class="field"><label>Nome do paciente</label><input id="patientName" placeholder="Nome completo"></div>
+      <div class="field"><label>Data da sessão</label><input type="date" id="sessionDate"></div>
+      <div class="field"><label>Psicólogo(a) / CRP</label><input id="psychName" placeholder="Nome e CRP"></div>
+      <div class="field"><label>Contexto adicional</label><textarea id="ctx" style="height:50px;resize:none" placeholder="Ex: 3ª sessão, TCC, ansiedade..."></textarea></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">Transcrição</div>
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="modeLive" onclick="setMode('live')">🎙 Ao vivo</button>
+        <button class="mode-btn" id="modeFile" onclick="setMode('file')">📁 Arquivo</button>
+      </div>
+
+      <div id="livePanel">
+        <div class="waveform" id="waveform">
+          <div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div>
+          <div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div>
+        </div>
+        <div class="rec-row">
+          <button class="btn btn-d" id="btnRec" onclick="startLive()">🔴 Gravar</button>
+          <button class="btn btn-g" id="btnStop" onclick="stopLive()" disabled>⏹ Parar</button>
+        </div>
+        <button class="btn btn-g btn-full btn-sm" onclick="clearTx()">🗑 Limpar transcrição</button>
+        <div style="font-size:.7rem;color:var(--text3);text-align:center;margin-top:6px;line-height:1.4">Usa reconhecimento do navegador (Chrome recomendado)</div>
+      </div>
+
+      <div id="filePanel" style="display:none">
+        <div class="upload-area" onclick="document.getElementById('audioIn').click()">
+          <input type="file" id="audioIn" accept="audio/*,video/webm" style="display:none" onchange="handleFile(this)">
+          <div style="font-size:1.4rem;margin-bottom:5px">🎵</div>
+          <div>Clique para selecionar áudio</div>
+          <div style="font-size:.7rem;color:var(--text3);margin-top:3px">MP3, WAV, M4A, WebM · max 4 MB</div>
+        </div>
+        <div id="fileStatus" style="font-size:.78rem;color:var(--text2);margin-top:7px;display:none"></div>
+        <button class="btn btn-p btn-full btn-sm" id="btnTx" onclick="transcribeFile()" style="margin-top:7px;display:none">🔄 Transcrever com Whisper</button>
+      </div>
+    </div>
+
+    <div class="sec transcript-box" style="flex:1">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
+        <div class="sec-title" style="margin:0">Transcrição</div>
+        <div class="live-badge" id="liveBadge"><div class="ldot"></div>AO VIVO</div>
+      </div>
+      <div class="warn-banner" id="speechWarn">⚠️ Navegador não suporta reconhecimento de voz. Use Chrome ou modo Arquivo.</div>
+      <textarea class="transcript-area" id="txArea" placeholder="A transcrição aparecerá aqui...&#10;&#10;Clique 🔴 Gravar para iniciar."></textarea>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right">
+    <div class="tabs" id="tabs"></div>
+    <div class="toolbar">
+      <button class="btn-gen" id="btnGen" onclick="generate()">
+        <span class="btn-icon">✨</span><div class="spin"></div>Gerar com IA
+      </button>
+      <span class="doc-label" id="docLabel"></span>
+      <div class="sp"></div>
+      <button class="btn btn-g btn-sm" onclick="copyDoc()">📋 Copiar</button>
+      <button class="btn btn-g btn-sm" onclick="printDoc()">🖨 Imprimir</button>
+      <button class="btn btn-g btn-sm" onclick="clearDoc()" title="Limpar">🗑</button>
+    </div>
+    <div class="editor-wrap">
+      <textarea class="editor" id="editor" placeholder="Selecione um tipo de documento e clique em ✨ Gerar com IA.&#10;&#10;O texto gerado será exibido aqui e pode ser editado livremente."></textarea>
+      <div style="font-size:.72rem;color:var(--text3)">💡 Revise o conteúdo gerado antes de usar em contexto clínico.</div>
+    </div>
+    <div class="bottom-bar">
+      <span class="char-count" id="chars">0 caracteres</span>
+      <div class="sp"></div>
+      <button class="btn btn-g btn-sm" onclick="generateAll()">⚡ Gerar todos</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toasts -->
+<div class="toasts" id="toasts"></div>
+
+<!-- Keys Modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3>⚙️ Chaves de API</h3>
+    <p>Cole as chaves <strong>deepseek-chat</strong> (uma por linha) obtidas em <strong>github.com/alistaitsacle/free-llm-api-keys</strong>. As chaves expiram em 24-48h — renove diariamente.</p>
+    <div class="field">
+      <label>Chaves (sk-xxxxx), uma por linha</label>
+      <textarea id="keysInput" style="height:150px;font-family:monospace;font-size:.75rem" placeholder="sk-xxxxxxxxxxxxxx&#10;sk-yyyyyyyyyyyyyy&#10;sk-zzzzzzzzzzzzzz"></textarea>
+    </div>
+    <div class="info-box">
+      🔐 As chaves ficam salvas no <strong>seu navegador</strong> (localStorage) e são enviadas de forma segura para gerar os documentos. Nunca são armazenadas no servidor.
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-g" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-p" onclick="saveKeys()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<iframe id="pf" style="display:none"></iframe>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────────────
+const DOC_TYPES = [
+  {id:'anamnese',     label:'Anamnese'},
+  {id:'evolucao',     label:'Evolução'},
+  {id:'soap',         label:'SOAP'},
+  {id:'relatorio',    label:'Relatório'},
+  {id:'declaracao',   label:'Declaração'},
+  {id:'resumo',       label:'Resumo'},
+  {id:'hipoteses',    label:'Hipóteses'},
+  {id:'plano_terapeutico', label:'Plano Terap.'},
+];
+const DOC_LABELS = {
+  anamnese:'Anamnese Psicológica', evolucao:'Evolução de Sessão', soap:'Nota SOAP',
+  relatorio:'Relatório Psicológico', declaracao:'Declaração de Comparecimento',
+  resumo:'Resumo da Sessão', hipoteses:'Hipóteses Clínicas e Temas Centrais',
+  plano_terapeutico:'Plano Terapêutico',
+};
+
+let activeDoc = 'anamnese';
+const docStore = {};
+
+// ── Init ────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  buildTabs();
+  document.getElementById('sessionDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('editor').addEventListener('input', updateChars);
+  loadLocal();
+  checkStatus();
+  startClock();
+  // Pre-fill keys modal from localStorage
+  const saved = getKeys();
+  if (saved.length) document.getElementById('keysInput').value = saved.join('\n');
+});
+
+// ── Tabs ─────────────────────────────────────────────────────────────────────
+function buildTabs() {
+  const c = document.getElementById('tabs');
+  DOC_TYPES.forEach(({id, label}) => {
+    const b = document.createElement('button');
+    b.className = 'tab' + (id === activeDoc ? ' active' : '');
+    b.textContent = label; b.dataset.id = id;
+    b.onclick = () => switchDoc(id);
+    c.appendChild(b);
+  });
+  updateLabel();
+}
+function switchDoc(id) {
+  docStore[activeDoc] = document.getElementById('editor').value;
+  activeDoc = id;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.id === id));
+  document.getElementById('editor').value = docStore[id] || '';
+  updateChars(); updateLabel();
+}
+function updateLabel() { document.getElementById('docLabel').textContent = DOC_LABELS[activeDoc] || activeDoc; }
+function updateChars() {
+  const n = document.getElementById('editor').value.length;
+  document.getElementById('chars').textContent = n.toLocaleString('pt-BR') + ' caracteres';
+}
+
+// ── Clock ────────────────────────────────────────────────────────────────────
+let t0 = Date.now();
+function startClock() {
+  setInterval(() => {
+    const s = Math.floor((Date.now()-t0)/1000);
+    document.getElementById('timer').textContent = `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+  }, 1000);
+}
+
+// ── Keys ─────────────────────────────────────────────────────────────────────
+function getKeys() {
+  const v = localStorage.getItem('psicodoct_keys') || '';
+  return v.split('\n').map(k=>k.trim()).filter(Boolean);
+}
+function keysHeader() { return getKeys().join(','); }
+function openModal() { document.getElementById('overlay').classList.add('open'); }
+function closeModal() { document.getElementById('overlay').classList.remove('open'); }
+function saveKeys() {
+  const val = document.getElementById('keysInput').value;
+  localStorage.setItem('psicodoct_keys', val);
+  toast('✅ Chaves salvas!', 'ok');
+  closeModal();
+  checkStatus();
+}
+document.getElementById('overlay').addEventListener('click', e => { if(e.target===document.getElementById('overlay')) closeModal(); });
+
+async function checkStatus() {
+  const dot = document.getElementById('apiBadge');
+  const label = document.getElementById('apiLabel');
+  const keys = getKeys();
+  if (!keys.length) { dot.className='api-dot warn'; label.textContent='⚙️ Sem chaves'; return; }
+  try {
+    const r = await fetch('/api/status', { headers: { 'X-Keys': keysHeader() } });
+    const d = await r.json();
+    if (d.has_keys) { dot.className='api-dot'; label.textContent=`✅ ${d.count} chave${d.count!==1?'s':''}`; }
+    else { dot.className='api-dot warn'; label.textContent='⚙️ Sem chaves'; }
+  } catch {
+    dot.className='api-dot bad'; label.textContent='⚙️ Offline';
+  }
+}
+
+// ── Live Transcription ────────────────────────────────────────────────────────
+let recognition=null, isRec=false, accumulated='', curMode='live';
+
+function setMode(m) {
+  curMode=m;
+  document.getElementById('livePanel').style.display = m==='live'?'block':'none';
+  document.getElementById('filePanel').style.display = m==='file'?'block':'none';
+  document.getElementById('modeLive').classList.toggle('active', m==='live');
+  document.getElementById('modeFile').classList.toggle('active', m==='file');
+}
+
+function startLive() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { document.getElementById('speechWarn').classList.add('show'); return; }
+  recognition = new SR();
+  recognition.lang='pt-BR'; recognition.continuous=true; recognition.interimResults=true;
+  recognition.onresult = e => {
+    let interim='';
+    for (let i=e.resultIndex;i<e.results.length;i++) {
+      if (e.results[i].isFinal) accumulated += e.results[i][0].transcript+' ';
+      else interim = e.results[i][0].transcript;
+    }
+    document.getElementById('txArea').value = accumulated+(interim?`[${interim}]`:'');
+    const ta=document.getElementById('txArea'); ta.scrollTop=ta.scrollHeight;
+  };
+  recognition.onerror = e => { if(e.error!=='no-speech') toast('Erro mic: '+e.error,'err'); };
+  recognition.onend = () => { if(isRec) recognition.start(); };
+  isRec=true; recognition.start();
+  document.getElementById('btnRec').disabled=true;
+  document.getElementById('btnStop').disabled=false;
+  document.getElementById('waveform').classList.add('active');
+  document.getElementById('liveBadge').classList.add('show');
+  document.getElementById('timer').classList.add('rec');
+  toast('🔴 Gravação iniciada','ok');
+}
+
+function stopLive() {
+  isRec=false;
+  if(recognition){recognition.stop();recognition=null;}
+  document.getElementById('btnRec').disabled=false;
+  document.getElementById('btnStop').disabled=true;
+  document.getElementById('waveform').classList.remove('active');
+  document.getElementById('liveBadge').classList.remove('show');
+  document.getElementById('timer').classList.remove('rec');
+  const ta=document.getElementById('txArea');
+  ta.value=ta.value.replace(/\[.*?\]/g,'').trim();
+  accumulated=ta.value+' ';
+  toast('⏹ Gravação encerrada','ok');
+}
+
+function clearTx() {
+  if(!confirm('Limpar transcrição?'))return;
+  accumulated=''; document.getElementById('txArea').value='';
+}
+
+// ── File Transcription ────────────────────────────────────────────────────────
+let uploadedFile=null;
+function handleFile(input) {
+  uploadedFile=input.files[0];
+  if(!uploadedFile)return;
+  const mb=(uploadedFile.size/1024/1024).toFixed(1);
+  if(uploadedFile.size>4*1024*1024){toast('Arquivo muito grande (>4 MB). Divida o áudio em partes.','warn');return;}
+  document.getElementById('fileStatus').textContent=`📁 ${uploadedFile.name} (${mb} MB)`;
+  document.getElementById('fileStatus').style.display='block';
+  document.getElementById('btnTx').style.display='flex';
+}
+
+async function transcribeFile() {
+  if(!uploadedFile)return;
+  const keys=getKeys();
+  if(!keys.length){toast('Configure as chaves de API ⚙️','warn');openModal();return;}
+  const btn=document.getElementById('btnTx');
+  btn.disabled=true; btn.textContent='⏳ Transcrevendo...';
+  const st=document.getElementById('fileStatus');
+  try {
+    const ab=await uploadedFile.arrayBuffer();
+    const b64=btoa(String.fromCharCode(...new Uint8Array(ab)));
+    st.textContent='🔄 Enviando para Whisper...';
+    const r=await fetch('/api/transcribe',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-Keys':keysHeader()},
+      body:JSON.stringify({audio_b64:b64,filename:uploadedFile.name}),
+    });
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error||r.statusText);
+    document.getElementById('txArea').value=d.transcript;
+    accumulated=d.transcript+' ';
+    st.textContent=`✅ ${d.transcript.split(' ').length} palavras transcritas`;
+    toast('✅ Transcrição concluída!','ok');
+  } catch(e) {
+    st.textContent='❌ '+e.message;
+    toast('Erro: '+e.message,'err');
+  } finally {
+    btn.disabled=false; btn.textContent='🔄 Transcrever com Whisper';
+  }
+}
+
+// ── Generate ──────────────────────────────────────────────────────────────────
+async function generate() {
+  const tx=document.getElementById('txArea').value.trim();
+  if(!tx){toast('⚠️ Transcrição vazia.','warn');return;}
+  const keys=getKeys();
+  if(!keys.length){toast('Configure as chaves de API ⚙️','warn');openModal();return;}
+
+  const btn=document.getElementById('btnGen');
+  btn.classList.add('generating'); btn.disabled=true;
+  try {
+    const r=await fetch('/api/generate',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-Keys':keysHeader()},
+      body:JSON.stringify({
+        transcript:tx, document_type:activeDoc,
+        patient_name:document.getElementById('patientName').value.trim(),
+        session_date:document.getElementById('sessionDate').value,
+        psychologist_name:document.getElementById('psychName').value.trim(),
+        additional_context:document.getElementById('ctx').value.trim(),
+      }),
+    });
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error||r.statusText);
+    docStore[activeDoc]=d.document;
+    document.getElementById('editor').value=d.document;
+    updateChars(); saveLocal();
+    toast(`✅ ${DOC_LABELS[activeDoc]} gerado!`,'ok');
+  } catch(e) {
+    toast('Erro: '+e.message,'err');
+    if(e.message.includes('chave')||e.message.includes('503'))setTimeout(openModal,500);
+  } finally {
+    btn.classList.remove('generating'); btn.disabled=false;
+  }
+}
+
+async function generateAll() {
+  if(!confirm(`Gerar todos os ${DOC_TYPES.length} documentos? Pode demorar alguns minutos.`))return;
+  const tx=document.getElementById('txArea').value.trim();
+  if(!tx){toast('⚠️ Transcrição vazia.','warn');return;}
+  toast('⏳ Gerando todos os documentos...','');
+  for(const {id} of DOC_TYPES){switchDoc(id);await generate();await new Promise(r=>setTimeout(r,600));}
+  toast('✅ Todos os documentos gerados!','ok');
+}
+
+// ── Editor actions ────────────────────────────────────────────────────────────
+function copyDoc() {
+  const t=document.getElementById('editor').value;
+  if(!t.trim()){toast('Editor vazio.','warn');return;}
+  navigator.clipboard.writeText(t).then(()=>toast('📋 Copiado!','ok'),()=>toast('Erro ao copiar.','err'));
+}
+function clearDoc() {
+  if(!document.getElementById('editor').value.trim())return;
+  if(!confirm('Limpar documento?'))return;
+  document.getElementById('editor').value=''; docStore[activeDoc]=''; updateChars();
+}
+function printDoc() {
+  const t=document.getElementById('editor').value;
+  if(!t.trim()){toast('Editor vazio.','warn');return;}
+  const patient=document.getElementById('patientName').value||'Paciente';
+  const date=document.getElementById('sessionDate').value||new Date().toLocaleDateString('pt-BR');
+  const psy=document.getElementById('psychName').value;
+  const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${DOC_LABELS[activeDoc]}</title>
+  <style>body{font-family:Arial,sans-serif;font-size:12pt;padding:40px;max-width:800px;margin:0 auto}
+  h1{font-size:14pt;color:#2b4c8c;margin-bottom:4px}.meta{font-size:10pt;color:#555;margin-bottom:20px;border-bottom:1px solid #ddd;padding-bottom:10px}
+  pre{white-space:pre-wrap;font-family:Arial,sans-serif;line-height:1.8;font-size:11pt}@media print{body{padding:20px}}</style>
+  </head><body><h1>${DOC_LABELS[activeDoc]}</h1>
+  <div class="meta">Paciente: ${patient} | Data: ${date}${psy?' | Psicólogo(a): '+psy:''}</div>
+  <pre>${t.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre></body></html>`;
+  const f=document.getElementById('pf');
+  f.style.display='block';
+  f.contentDocument.open(); f.contentDocument.write(html); f.contentDocument.close();
+  f.contentWindow.focus(); f.contentWindow.print();
+  setTimeout(()=>f.style.display='none',2000);
+}
+
+// ── Local storage ─────────────────────────────────────────────────────────────
+function saveLocal() {
+  try { localStorage.setItem('psicodoct_docs',JSON.stringify(docStore)); } catch{}
+}
+function loadLocal() {
+  try {
+    const d=localStorage.getItem('psicodoct_docs');
+    if(d) Object.assign(docStore,JSON.parse(d));
+    if(docStore[activeDoc]){document.getElementById('editor').value=docStore[activeDoc];updateChars();}
+  } catch{}
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function toast(msg, type='') {
+  const el=document.createElement('div');
+  el.className='toast'+(type?' '+type:'');
+  el.textContent=msg;
+  const c=document.getElementById('toasts');
+  c.appendChild(el);
+  setTimeout(()=>el.remove(),3200);
+}
+</script>
+</body>
+</html>

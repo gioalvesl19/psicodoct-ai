@@ -1,0 +1,9 @@
+{
+  "name": "psicodoct-ai",
+  "version": "1.0.0",
+  "description": "Assistente clínico para psicólogos com geração automática de documentos via IA",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  }
+}
