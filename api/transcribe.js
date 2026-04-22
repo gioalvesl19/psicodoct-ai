@@ -12,8 +12,8 @@ module.exports = async function handler(req, res) {
   const { audio_b64, filename } = req.body || {};
   if (!audio_b64) return res.status(400).json({ error: 'Campo audio_b64 obrigatório.' });
 
-  const keys = getKeys(req);
-  if (!keys.length) return res.status(503).json({ error: 'Sem chaves de API. Configure na engrenagem ⚙️.' });
+  const keys = await getKeys(req);
+  if (!keys.length) return res.status(503).json({ error: 'Não foi possível obter chaves. Tente novamente.' });
 
   const audioBuffer = Buffer.from(audio_b64, 'base64');
   let lastErr = 'Sem chaves';
@@ -24,22 +24,16 @@ module.exports = async function handler(req, res) {
       form.append('file', new Blob([audioBuffer]), filename || 'session.webm');
       form.append('model', 'whisper-1');
       form.append('language', 'pt');
-
       const r = await fetch(`${BASE_URL}/audio/transcriptions`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${key}` },
         body: form,
       });
-
-      if (r.ok) {
-        const data = await r.json();
-        return res.status(200).json({ transcript: data.text || '' });
-      }
+      if (r.ok) return res.status(200).json({ transcript: (await r.json()).text || '' });
       lastErr = `HTTP ${r.status}: ${(await r.text()).slice(0, 120)}`;
     } catch (e) {
       lastErr = e.message;
     }
   }
-
   return res.status(503).json({ error: `Transcrição falhou: ${lastErr}` });
 };

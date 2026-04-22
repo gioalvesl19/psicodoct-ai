@@ -128,9 +128,9 @@
   <div class="logo"><div class="logo-icon">🧠</div> PsicoDoc AI</div>
   <div class="timer" id="timer">00:00</div>
   <div class="header-spacer"></div>
-  <button class="hbtn" onclick="openModal()" title="Configurar chaves de API">
+  <button class="hbtn" onclick="openModal()" title="Chaves de API (opcional)">
     <div class="api-dot" id="apiBadge"></div>
-    <span id="apiLabel">⚙️ Chaves</span>
+    <span id="apiLabel">Verificando...</span>
   </button>
 </header>
 
@@ -220,13 +220,16 @@
 <div class="overlay" id="overlay">
   <div class="modal">
     <h3>⚙️ Chaves de API</h3>
-    <p>Cole as chaves <strong>deepseek-chat</strong> (uma por linha) obtidas em <strong>github.com/alistaitsacle/free-llm-api-keys</strong>. As chaves expiram em 24-48h — renove diariamente.</p>
+    <div class="info-box" style="margin-bottom:12px">
+      🤖 <strong>O app busca chaves automaticamente</strong> do repositório público <strong>github.com/alistaitsacle/free-llm-api-keys</strong> (atualizado 3-5× por dia). Você não precisa fazer nada.
+    </div>
+    <p>Se as chaves automáticas estiverem esgotadas, você pode colar suas próprias abaixo como backup (opcional):</p>
     <div class="field">
-      <label>Chaves (sk-xxxxx), uma por linha</label>
-      <textarea id="keysInput" style="height:150px;font-family:monospace;font-size:.75rem" placeholder="sk-xxxxxxxxxxxxxx&#10;sk-yyyyyyyyyyyyyy&#10;sk-zzzzzzzzzzzzzz"></textarea>
+      <label>Chaves próprias — opcional (sk-xxxxx, uma por linha)</label>
+      <textarea id="keysInput" style="height:110px;font-family:monospace;font-size:.75rem" placeholder="Deixe vazio para usar chaves automáticas&#10;&#10;sk-xxxxxxxxxxxxxx&#10;sk-yyyyyyyyyyyyyy"></textarea>
     </div>
     <div class="info-box">
-      🔐 As chaves ficam salvas no <strong>seu navegador</strong> (localStorage) e são enviadas de forma segura para gerar os documentos. Nunca são armazenadas no servidor.
+      🔐 Chaves próprias ficam apenas no <strong>seu navegador</strong> (localStorage). Nunca vão para o servidor.
     </div>
     <div class="modal-foot">
       <button class="btn btn-g" onclick="closeModal()">Cancelar</button>
@@ -326,15 +329,24 @@ document.getElementById('overlay').addEventListener('click', e => { if(e.target=
 async function checkStatus() {
   const dot = document.getElementById('apiBadge');
   const label = document.getElementById('apiLabel');
-  const keys = getKeys();
-  if (!keys.length) { dot.className='api-dot warn'; label.textContent='⚙️ Sem chaves'; return; }
   try {
-    const r = await fetch('/api/status', { headers: { 'X-Keys': keysHeader() } });
+    const headers = { 'Content-Type': 'application/json' };
+    const userKeys = keysHeader();
+    if (userKeys) headers['X-Keys'] = userKeys;
+    const r = await fetch('/api/status', { headers });
     const d = await r.json();
-    if (d.has_keys) { dot.className='api-dot'; label.textContent=`✅ ${d.count} chave${d.count!==1?'s':''}`; }
-    else { dot.className='api-dot warn'; label.textContent='⚙️ Sem chaves'; }
+    if (d.has_keys) {
+      dot.className = 'api-dot';
+      label.textContent = d.source === 'auto'
+        ? `🤖 Auto (${d.count} chaves)`
+        : `✅ ${d.count} chave${d.count !== 1 ? 's' : ''}`;
+    } else {
+      dot.className = 'api-dot warn';
+      label.textContent = '⚠️ Sem chaves';
+    }
   } catch {
-    dot.className='api-dot bad'; label.textContent='⚙️ Offline';
+    dot.className = 'api-dot bad';
+    label.textContent = '⚠️ Offline';
   }
 }
 
@@ -407,8 +419,6 @@ function handleFile(input) {
 
 async function transcribeFile() {
   if(!uploadedFile)return;
-  const keys=getKeys();
-  if(!keys.length){toast('Configure as chaves de API ⚙️','warn');openModal();return;}
   const btn=document.getElementById('btnTx');
   btn.disabled=true; btn.textContent='⏳ Transcrevendo...';
   const st=document.getElementById('fileStatus');
@@ -416,9 +426,11 @@ async function transcribeFile() {
     const ab=await uploadedFile.arrayBuffer();
     const b64=btoa(String.fromCharCode(...new Uint8Array(ab)));
     st.textContent='🔄 Enviando para Whisper...';
+    const headers={'Content-Type':'application/json'};
+    const uk=keysHeader(); if(uk) headers['X-Keys']=uk;
     const r=await fetch('/api/transcribe',{
       method:'POST',
-      headers:{'Content-Type':'application/json','X-Keys':keysHeader()},
+      headers,
       body:JSON.stringify({audio_b64:b64,filename:uploadedFile.name}),
     });
     const d=await r.json();
@@ -439,15 +451,15 @@ async function transcribeFile() {
 async function generate() {
   const tx=document.getElementById('txArea').value.trim();
   if(!tx){toast('⚠️ Transcrição vazia.','warn');return;}
-  const keys=getKeys();
-  if(!keys.length){toast('Configure as chaves de API ⚙️','warn');openModal();return;}
 
   const btn=document.getElementById('btnGen');
   btn.classList.add('generating'); btn.disabled=true;
   try {
+    const headers={'Content-Type':'application/json'};
+    const uk=keysHeader(); if(uk) headers['X-Keys']=uk;
     const r=await fetch('/api/generate',{
       method:'POST',
-      headers:{'Content-Type':'application/json','X-Keys':keysHeader()},
+      headers,
       body:JSON.stringify({
         transcript:tx, document_type:activeDoc,
         patient_name:document.getElementById('patientName').value.trim(),
@@ -463,8 +475,7 @@ async function generate() {
     updateChars(); saveLocal();
     toast(`✅ ${DOC_LABELS[activeDoc]} gerado!`,'ok');
   } catch(e) {
-    toast('Erro: '+e.message,'err');
-    if(e.message.includes('chave')||e.message.includes('503'))setTimeout(openModal,500);
+    toast('Erro ao gerar: '+e.message,'err');
   } finally {
     btn.classList.remove('generating'); btn.disabled=false;
   }
