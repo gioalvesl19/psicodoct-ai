@@ -3,237 +3,345 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PsicoDoc AI — Assistente Clínico</title>
+<title>PsicoDoc AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --primary: #2b4c8c; --primary-dark: #1e3a6e; --primary-light: #3d6dbf;
-    --accent: #7c3aed; --accent-light: #ede9fe;
-    --success: #059669; --danger: #dc2626; --warn: #d97706;
-    --bg: #f0f4f8; --surface: #ffffff; --surface2: #f8fafc;
-    --border: #e2e8f0; --text: #1e293b; --text2: #475569; --text3: #94a3b8;
-    --radius: 10px; --shadow: 0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);
-  }
-  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink:       #0f172a;
+  --ink-2:     #475569;
+  --ink-3:     #94a3b8;
+  --accent:    #6366f1;
+  --accent-h:  #4f46e5;
+  --accent-bg: #eef2ff;
+  --ok:        #10b981;
+  --red:       #ef4444;
+  --warn:      #f59e0b;
+  --bg:        #f8fafc;
+  --surface:   #ffffff;
+  --border:    #e2e8f0;
+  --border-2:  #f1f5f9;
+  --r:         10px;
+  --sh:        0 1px 3px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.04);
+  --sh-lg:     0 8px 32px rgba(0,0,0,.09);
+}
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
 
-  header { background: var(--primary); color: #fff; padding: 0 20px; height: 52px; display: flex; align-items: center; gap: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.2); flex-shrink: 0; }
-  .logo { font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-  .logo-icon { background: rgba(255,255,255,.18); border-radius: 8px; width: 30px; height: 30px; display: grid; place-items: center; font-size: 1rem; }
-  .header-spacer { flex: 1; }
-  .hbtn { display: flex; align-items: center; gap: 5px; background: rgba(255,255,255,.12); border: none; color: #fff; border-radius: 18px; padding: 4px 12px; font-size: .8rem; cursor: pointer; font-family: inherit; transition: background .15s; }
-  .hbtn:hover { background: rgba(255,255,255,.22); }
-  .api-dot { width: 7px; height: 7px; border-radius: 50%; background: #6ee7b7; flex-shrink: 0; }
-  .api-dot.bad { background: #fca5a5; }
-  .api-dot.warn { background: #fde68a; }
-  .timer { font-size: .9rem; font-weight: 600; font-variant-numeric: tabular-nums; background: rgba(255,255,255,.12); padding: 4px 10px; border-radius: 18px; letter-spacing: .4px; }
-  .timer.rec { background: rgba(220,38,38,.6); animation: pulse 1s ease-in-out infinite; }
-  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.65} }
+/* ── Header ─────────────────────────────── */
+header {
+  height: 52px;
+  background: var(--ink);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 14px;
+  flex-shrink: 0;
+  z-index: 10;
+}
+.logo { display: flex; align-items: center; gap: 9px; color: #fff; font-weight: 600; font-size: 14.5px; }
+.logo-mark { width: 28px; height: 28px; background: var(--accent); border-radius: 7px; display: grid; place-items: center; font-size: 13px; }
+.h-spacer { flex: 1; }
+.timer {
+  font-size: 12.5px; font-weight: 500; font-variant-numeric: tabular-nums;
+  color: rgba(255,255,255,.5); background: rgba(255,255,255,.07);
+  padding: 3px 10px; border-radius: 20px; letter-spacing: .3px;
+}
+.timer.rec { color: #fca5a5; background: rgba(239,68,68,.18); }
+.status-pill {
+  display: flex; align-items: center; gap: 5px; cursor: pointer;
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 20px; padding: 4px 11px; font-size: 11.5px;
+  color: rgba(255,255,255,.7); transition: background .15s; user-select: none;
+}
+.status-pill:hover { background: rgba(255,255,255,.13); }
+.s-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); flex-shrink: 0; }
+.s-dot.warn { background: var(--warn); }
+.s-dot.bad  { background: var(--red); }
 
-  .app { flex: 1; display: grid; grid-template-columns: 290px 1fr; overflow: hidden; height: calc(100vh - 52px); }
+/* ── Layout ─────────────────────────────── */
+.app { flex: 1; display: grid; grid-template-columns: 256px 1fr; overflow: hidden; }
 
-  /* LEFT */
-  .left { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; }
-  .sec { padding: 14px; border-bottom: 1px solid var(--border); }
-  .sec-title { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text3); margin-bottom: 10px; }
-  label { font-size: .78rem; color: var(--text2); font-weight: 500; display: block; margin-bottom: 3px; }
-  input, select, textarea { width: 100%; border: 1.5px solid var(--border); border-radius: 7px; padding: 7px 9px; font-size: .85rem; color: var(--text); background: var(--surface2); font-family: inherit; transition: border-color .15s; }
-  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(43,76,140,.1); }
-  .field { margin-bottom: 9px; }
+/* ── Sidebar ─────────────────────────────── */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
 
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 7px 13px; border-radius: 7px; border: none; cursor: pointer; font-size: .83rem; font-weight: 600; font-family: inherit; transition: all .15s; white-space: nowrap; }
-  .btn:disabled { opacity: .5; cursor: not-allowed; }
-  .btn-p { background: var(--primary); color: #fff; }
-  .btn-p:hover:not(:disabled) { background: var(--primary-dark); }
-  .btn-d { background: var(--danger); color: #fff; }
-  .btn-d:hover:not(:disabled) { background: #b91c1c; }
-  .btn-g { background: transparent; color: var(--text2); border: 1.5px solid var(--border); }
-  .btn-g:hover:not(:disabled) { background: var(--bg); color: var(--text); }
-  .btn-full { width: 100%; }
-  .btn-sm { padding: 5px 9px; font-size: .78rem; border-radius: 6px; }
+/* Patient fields */
+.pt-fields { padding: 18px 16px 14px; border-bottom: 1px solid var(--border-2); display: flex; flex-direction: column; gap: 7px; }
+.pt-name { font-size: 13px; font-weight: 500; border: 1.5px solid transparent; border-radius: 8px; padding: 7px 9px; background: var(--bg); color: var(--ink); width: 100%; font-family: inherit; transition: all .15s; }
+.pt-name::placeholder { color: var(--ink-3); }
+.pt-name:focus { outline: none; border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
+.pt-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.pt-sub { font-size: 12px; border: 1.5px solid transparent; border-radius: 7px; padding: 6px 8px; background: var(--bg); color: var(--ink); width: 100%; font-family: inherit; transition: all .15s; }
+.pt-sub::placeholder { color: var(--ink-3); }
+.pt-sub:focus { outline: none; border-color: var(--accent); background: var(--surface); }
+.ctx-row { display: flex; align-items: center; gap: 4px; cursor: pointer; color: var(--ink-3); font-size: 11px; user-select: none; margin-top: 1px; }
+.ctx-row:hover { color: var(--accent); }
+textarea.pt-ctx { font-size: 12px; border: 1.5px solid var(--border); border-radius: 7px; padding: 7px 9px; background: var(--bg); color: var(--ink); width: 100%; font-family: inherit; resize: none; height: 52px; margin-top: 4px; transition: all .15s; display: none; }
+textarea.pt-ctx.open { display: block; }
+textarea.pt-ctx:focus { outline: none; border-color: var(--accent); background: var(--surface); }
 
-  .mode-toggle { display: flex; border-radius: 7px; overflow: hidden; border: 1.5px solid var(--border); margin-bottom: 10px; }
-  .mode-btn { flex: 1; padding: 6px; font-size: .75rem; font-weight: 600; border: none; background: var(--surface2); color: var(--text2); cursor: pointer; font-family: inherit; transition: all .15s; }
-  .mode-btn.active { background: var(--primary); color: #fff; }
+/* Record */
+.rec-section { padding: 18px 16px; border-bottom: 1px solid var(--border-2); display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.rec-btn {
+  width: 64px; height: 64px; border-radius: 50%; border: none; cursor: pointer;
+  background: var(--red); color: #fff; font-size: 20px;
+  box-shadow: 0 4px 16px rgba(239,68,68,.3); transition: all .2s;
+  display: grid; place-items: center; position: relative;
+}
+.rec-btn:hover { transform: scale(1.06); box-shadow: 0 6px 20px rgba(239,68,68,.45); }
+.rec-btn.active { background: #dc2626; }
+.rec-btn.active::after {
+  content: '';
+  position: absolute; inset: -6px; border-radius: 50%;
+  border: 2px solid rgba(239,68,68,.3);
+  animation: ripple 1.8s ease-in-out infinite;
+}
+@keyframes ripple { 0%{transform:scale(1);opacity:1} 100%{transform:scale(1.4);opacity:0} }
 
-  .waveform { height: 32px; background: var(--surface2); border-radius: 7px; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; gap: 2px; padding: 0 8px; overflow: hidden; margin-bottom: 8px; }
-  .wb { width: 3px; background: var(--primary-light); border-radius: 2px; height: 5px; transition: height .1s; }
-  .waveform.active .wb { animation: wv 1.1s ease-in-out infinite; }
-  .wb:nth-child(1){animation-delay:0s}.wb:nth-child(2){animation-delay:.1s}.wb:nth-child(3){animation-delay:.2s}.wb:nth-child(4){animation-delay:.3s}.wb:nth-child(5){animation-delay:.4s}.wb:nth-child(6){animation-delay:.5s}.wb:nth-child(7){animation-delay:.4s}.wb:nth-child(8){animation-delay:.3s}.wb:nth-child(9){animation-delay:.2s}.wb:nth-child(10){animation-delay:.1s}
-  @keyframes wv{0%,100%{height:4px}50%{height:22px}}
+.rec-row { display: flex; align-items: center; gap: 10px; }
+.rec-status { font-size: 12px; font-weight: 500; color: var(--ink-3); }
+.rec-status.live { color: var(--red); }
 
-  .rec-row { display: flex; gap: 7px; margin-bottom: 7px; }
-  .rec-row .btn { flex: 1; }
-  .live-badge { display: none; align-items: center; gap: 4px; font-size: .68rem; color: var(--success); font-weight: 700; margin-bottom: 6px; }
-  .live-badge.show { display: inline-flex; }
-  .ldot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: blink 1s ease-in-out infinite; }
-  @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.mode-switch { display: flex; gap: 0; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+.mode-opt { padding: 4px 13px; border: none; background: transparent; font-size: 11px; font-weight: 500; font-family: inherit; color: var(--ink-3); cursor: pointer; transition: all .15s; }
+.mode-opt.on { background: var(--accent); color: #fff; }
 
-  .upload-area { border: 2px dashed var(--border); border-radius: 7px; padding: 14px; text-align: center; cursor: pointer; color: var(--text2); font-size: .8rem; transition: all .2s; }
-  .upload-area:hover { border-color: var(--primary-light); color: var(--primary); background: #eff6ff; }
+.upload-zone { border: 2px dashed var(--border); border-radius: 8px; padding: 14px 10px; text-align: center; cursor: pointer; font-size: 11.5px; color: var(--ink-3); transition: all .2s; width: 100%; }
+.upload-zone:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+.upload-info { font-size: 11px; color: var(--ink-2); margin-top: 5px; display: none; }
+.upload-info.show { display: block; }
 
-  .transcript-box { flex: 1; display: flex; flex-direction: column; }
-  .transcript-area { flex: 1; min-height: 110px; max-height: 260px; border: 1.5px solid var(--border); border-radius: 7px; padding: 9px; font-size: .85rem; line-height: 1.6; resize: none; background: var(--surface2); font-family: inherit; overflow-y: auto; }
-  .transcript-area:focus { outline: none; border-color: var(--primary-light); }
+/* Transcript */
+.tx-section { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 14px 16px 16px; gap: 7px; }
+.tx-header { display: flex; align-items: center; justify-content: space-between; }
+.tx-label { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--ink-3); }
+.live-badge { display: none; align-items: center; gap: 4px; font-size: 9.5px; font-weight: 700; color: var(--ok); letter-spacing: .5px; text-transform: uppercase; }
+.live-badge.show { display: flex; }
+.ldot { width: 5px; height: 5px; border-radius: 50%; background: var(--ok); animation: blink 1s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:.2} }
+.tx-clear { font-size: 10.5px; color: var(--ink-3); border: none; background: transparent; cursor: pointer; font-family: inherit; padding: 2px 5px; border-radius: 4px; }
+.tx-clear:hover { color: var(--red); background: #fee2e2; }
+.tx-area { flex: 1; min-height: 0; resize: none; border: 1.5px solid var(--border); border-radius: 8px; padding: 10px 11px; font-size: 12.5px; line-height: 1.7; color: var(--ink); background: var(--bg); font-family: inherit; overflow-y: auto; }
+.tx-area:focus { outline: none; border-color: var(--accent); background: var(--surface); }
+.warn-note { font-size: 11px; color: #92400e; background: #fef3c7; border: 1px solid #fbbf24; border-radius: 6px; padding: 7px 9px; display: none; }
+.warn-note.show { display: block; }
 
-  .warn-banner { background: #fef3c7; border: 1.5px solid #fbbf24; color: #92400e; padding: 7px 10px; border-radius: 7px; font-size: .75rem; display: none; margin-bottom: 7px; }
-  .warn-banner.show { display: block; }
+/* ── Main panel ─────────────────────────── */
+.main { display: flex; flex-direction: column; overflow: hidden; }
 
-  /* RIGHT */
-  .right { display: flex; flex-direction: column; overflow: hidden; }
-  .tabs { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 16px 0; display: flex; gap: 4px; flex-wrap: wrap; flex-shrink: 0; }
-  .tab { padding: 6px 12px; border-radius: 7px 7px 0 0; border: 1.5px solid var(--border); border-bottom: none; background: var(--surface2); color: var(--text2); font-size: .78rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s; }
-  .tab:hover { background: var(--bg); }
-  .tab.active { background: var(--surface); color: var(--primary); border-bottom-color: var(--surface); }
+.doc-tabs {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 0 20px; display: flex; align-items: flex-end;
+  gap: 0; overflow-x: auto; flex-shrink: 0;
+}
+.doc-tabs::-webkit-scrollbar { display: none; }
+.doc-tab {
+  padding: 13px 14px 12px; border: none; background: transparent;
+  font-size: 12.5px; font-weight: 500; font-family: inherit;
+  color: var(--ink-3); cursor: pointer; white-space: nowrap;
+  border-bottom: 2px solid transparent; transition: all .15s; margin-bottom: -1px;
+}
+.doc-tab:hover { color: var(--ink-2); }
+.doc-tab.on { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
 
-  .toolbar { background: var(--surface); padding: 10px 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-  .btn-gen { background: linear-gradient(135deg,var(--accent),#9333ea); color: #fff; border: none; padding: 8px 18px; font-size: .88rem; font-weight: 700; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-family: inherit; transition: all .2s; }
-  .btn-gen:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(124,58,237,.35); }
-  .btn-gen:disabled { opacity: .6; transform: none; cursor: not-allowed; }
-  .spin { width: 15px; height: 15px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; display: none; }
-  .generating .spin { display: inline-block; }
-  .generating .btn-icon { display: none; }
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .sp { flex: 1; }
-  .doc-label { font-size: .8rem; color: var(--text2); }
+.editor-wrap { flex: 1; padding: 16px 20px 20px; display: flex; flex-direction: column; overflow: hidden; gap: 10px; }
 
-  .editor-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 14px 16px; gap: 10px; }
-  .editor { flex: 1; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 14px; font-size: .875rem; line-height: 1.8; color: var(--text); background: var(--surface); resize: none; font-family: inherit; overflow-y: auto; }
-  .editor:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(43,76,140,.1); }
+.editor-card {
+  flex: 1; background: var(--surface); border-radius: var(--r);
+  border: 1px solid var(--border); box-shadow: var(--sh);
+  display: flex; flex-direction: column; overflow: hidden;
+}
 
-  .bottom-bar { background: var(--surface); border-top: 1px solid var(--border); padding: 10px 16px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
-  .char-count { font-size: .72rem; color: var(--text3); }
+.editor-bar { padding: 11px 14px; border-bottom: 1px solid var(--border-2); display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
-  /* Toast */
-  .toasts { position: fixed; bottom: 16px; right: 16px; display: flex; flex-direction: column; gap: 7px; z-index: 9999; }
-  .toast { background: #1e293b; color: #fff; padding: 9px 14px; border-radius: 9px; font-size: .83rem; box-shadow: var(--shadow); max-width: 300px; animation: tin .2s ease-out; display: flex; align-items: center; gap: 7px; }
-  .toast.ok { background: var(--success); }
-  .toast.err { background: var(--danger); }
-  .toast.warn { background: var(--warn); }
-  @keyframes tin{from{transform:translateY(10px);opacity:0}}
+.btn-gen {
+  display: flex; align-items: center; gap: 7px;
+  background: var(--accent); color: #fff; border: none;
+  border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 600;
+  font-family: inherit; cursor: pointer; transition: all .2s;
+}
+.btn-gen:hover:not(:disabled) { background: var(--accent-h); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(99,102,241,.38); }
+.btn-gen:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+.spin { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; display: none; }
+.generating .spin { display: block; }
+.generating .gen-icon { display: none; }
+@keyframes spin{to{transform:rotate(360deg)}}
 
-  /* Modal */
-  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity .2s; }
-  .overlay.open { opacity: 1; pointer-events: all; }
-  .modal { background: var(--surface); border-radius: 13px; box-shadow: 0 8px 32px rgba(0,0,0,.15); padding: 24px; width: 500px; max-width: 95vw; max-height: 86vh; overflow-y: auto; transform: translateY(8px); transition: transform .2s; }
-  .overlay.open .modal { transform: none; }
-  .modal h3 { font-size: 1rem; color: var(--primary); margin-bottom: 12px; }
-  .modal p { font-size: .82rem; color: var(--text2); margin-bottom: 10px; line-height: 1.5; }
-  .modal-foot { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
-  .info-box { background: var(--accent-light); border-radius: 7px; padding: 9px 11px; font-size: .77rem; color: #5b21b6; margin-top: 8px; line-height: 1.5; }
+.doc-name { font-size: 12px; color: var(--ink-3); font-weight: 400; }
+.bar-space { flex: 1; }
+.icon-btn { width: 32px; height: 32px; border: 1.5px solid var(--border); border-radius: 7px; background: transparent; cursor: pointer; display: grid; place-items: center; font-size: 13px; color: var(--ink-2); transition: all .15s; }
+.icon-btn:hover { border-color: var(--ink-2); background: var(--bg); }
+
+.editor-body { flex: 1; overflow: hidden; }
+.editor-ta { width: 100%; height: 100%; border: none; resize: none; padding: 20px 22px; font-size: 13.5px; line-height: 1.9; font-family: inherit; color: var(--ink); background: transparent; }
+.editor-ta:focus { outline: none; }
+.editor-ta::placeholder { color: var(--ink-3); }
+
+.editor-foot { padding: 8px 14px; border-top: 1px solid var(--border-2); display: flex; align-items: center; flex-shrink: 0; }
+.chars { font-size: 11px; color: var(--ink-3); }
+.foot-space { flex: 1; }
+.gen-all { font-size: 11px; color: var(--ink-3); border: none; background: transparent; cursor: pointer; font-family: inherit; padding: 2px 7px; border-radius: 5px; }
+.gen-all:hover { color: var(--accent); background: var(--accent-bg); }
+
+/* ── Toast ─────────────────────────────── */
+.toasts { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 7px; z-index: 999; pointer-events: none; }
+.toast { background: var(--ink); color: #fff; padding: 10px 14px; border-radius: 8px; font-size: 12.5px; max-width: 280px; box-shadow: var(--sh-lg); animation: tin .2s ease-out; pointer-events: auto; }
+.toast.ok  { background: #064e3b; }
+.toast.err { background: #7f1d1d; }
+.toast.warn{ background: #78350f; }
+@keyframes tin { from { transform: translateY(8px); opacity: 0; } }
+
+/* ── Modal ─────────────────────────────── */
+.overlay { position: fixed; inset: 0; background: rgba(15,23,42,.45); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity .2s; }
+.overlay.open { opacity: 1; pointer-events: all; }
+.modal { background: var(--surface); border-radius: 14px; box-shadow: var(--sh-lg); padding: 28px; width: 460px; max-width: 95vw; overflow-y: auto; transform: scale(.97) translateY(4px); transition: transform .2s; }
+.overlay.open .modal { transform: scale(1) translateY(0); }
+.m-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+.m-desc { font-size: 12.5px; color: var(--ink-2); line-height: 1.6; margin-bottom: 14px; }
+.auto-box { background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 10px 13px; font-size: 12px; color: #065f46; margin-bottom: 14px; line-height: 1.6; }
+.m-label { font-size: 11.5px; font-weight: 500; color: var(--ink-2); margin-bottom: 5px; display: block; }
+.m-ta { width: 100%; border: 1.5px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 11.5px; font-family: monospace; color: var(--ink); height: 110px; resize: none; background: var(--bg); }
+.m-ta:focus { outline: none; border-color: var(--accent); }
+.m-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+.m-cancel { padding: 7px 13px; border: 1.5px solid var(--border); border-radius: 7px; background: transparent; font-size: 12.5px; font-weight: 500; font-family: inherit; cursor: pointer; color: var(--ink-2); }
+.m-cancel:hover { border-color: var(--ink-2); }
+.m-save { padding: 7px 14px; border: none; border-radius: 7px; background: var(--accent); color: #fff; font-size: 12.5px; font-weight: 600; font-family: inherit; cursor: pointer; }
+.m-save:hover { background: var(--accent-h); }
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 </style>
 </head>
 <body>
 
+<!-- HEADER -->
 <header>
-  <div class="logo"><div class="logo-icon">🧠</div> PsicoDoc AI</div>
+  <div class="logo"><div class="logo-mark">🧠</div> PsicoDoc AI</div>
   <div class="timer" id="timer">00:00</div>
-  <div class="header-spacer"></div>
-  <button class="hbtn" onclick="openModal()" title="Chaves de API (opcional)">
-    <div class="api-dot" id="apiBadge"></div>
-    <span id="apiLabel">Verificando...</span>
-  </button>
+  <div class="h-spacer"></div>
+  <div class="status-pill" onclick="openModal()" title="Chaves de API">
+    <div class="s-dot" id="sDot"></div>
+    <span id="sLabel">Verificando...</span>
+  </div>
 </header>
 
 <div class="app">
 
-  <!-- LEFT -->
-  <div class="left">
-    <div class="sec">
-      <div class="sec-title">Dados do Paciente</div>
-      <div class="field"><label>Nome do paciente</label><input id="patientName" placeholder="Nome completo"></div>
-      <div class="field"><label>Data da sessão</label><input type="date" id="sessionDate"></div>
-      <div class="field"><label>Psicólogo(a) / CRP</label><input id="psychName" placeholder="Nome e CRP"></div>
-      <div class="field"><label>Contexto adicional</label><textarea id="ctx" style="height:50px;resize:none" placeholder="Ex: 3ª sessão, TCC, ansiedade..."></textarea></div>
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+
+    <!-- Patient -->
+    <div class="pt-fields">
+      <input class="pt-name" id="ptName" type="text" placeholder="Nome do paciente">
+      <div class="pt-row">
+        <input class="pt-sub" id="ptDate" type="date">
+        <input class="pt-sub" id="ptCrp"  type="text" placeholder="CRP">
+      </div>
+      <div class="ctx-row" onclick="toggleCtx()">
+        <span id="ctxArrow">▸</span> contexto adicional
+      </div>
+      <textarea class="pt-ctx" id="ptCtx" placeholder="Ex: 3ª sessão, TCC, ansiedade..."></textarea>
     </div>
 
-    <div class="sec">
-      <div class="sec-title">Transcrição</div>
-      <div class="mode-toggle">
-        <button class="mode-btn active" id="modeLive" onclick="setMode('live')">🎙 Ao vivo</button>
-        <button class="mode-btn" id="modeFile" onclick="setMode('file')">📁 Arquivo</button>
+    <!-- Record -->
+    <div class="rec-section">
+      <button class="rec-btn" id="recBtn" onclick="toggleRecord()">🎙</button>
+      <div class="rec-row">
+        <div class="rec-status" id="recStatus">Clique para gravar</div>
+      </div>
+      <div class="mode-switch">
+        <button class="mode-opt on" id="modeLive" onclick="setMode('live')">Ao vivo</button>
+        <button class="mode-opt"   id="modeFile" onclick="setMode('file')">Arquivo</button>
       </div>
 
-      <div id="livePanel">
-        <div class="waveform" id="waveform">
-          <div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div>
-          <div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div>
+      <!-- File upload (hidden by default) -->
+      <div id="filePanel" style="display:none;width:100%">
+        <div class="upload-zone" onclick="document.getElementById('fileIn').click()">
+          <input type="file" id="fileIn" accept="audio/*,video/webm" style="display:none" onchange="onFileChange(this)">
+          🎵 Selecionar arquivo de áudio
+          <div style="font-size:10px;margin-top:3px;color:var(--ink-3)">MP3 · WAV · M4A · WebM · máx 4 MB</div>
         </div>
-        <div class="rec-row">
-          <button class="btn btn-d" id="btnRec" onclick="startLive()">🔴 Gravar</button>
-          <button class="btn btn-g" id="btnStop" onclick="stopLive()" disabled>⏹ Parar</button>
-        </div>
-        <button class="btn btn-g btn-full btn-sm" onclick="clearTx()">🗑 Limpar transcrição</button>
-        <div style="font-size:.7rem;color:var(--text3);text-align:center;margin-top:6px;line-height:1.4">Usa reconhecimento do navegador (Chrome recomendado)</div>
-      </div>
-
-      <div id="filePanel" style="display:none">
-        <div class="upload-area" onclick="document.getElementById('audioIn').click()">
-          <input type="file" id="audioIn" accept="audio/*,video/webm" style="display:none" onchange="handleFile(this)">
-          <div style="font-size:1.4rem;margin-bottom:5px">🎵</div>
-          <div>Clique para selecionar áudio</div>
-          <div style="font-size:.7rem;color:var(--text3);margin-top:3px">MP3, WAV, M4A, WebM · max 4 MB</div>
-        </div>
-        <div id="fileStatus" style="font-size:.78rem;color:var(--text2);margin-top:7px;display:none"></div>
-        <button class="btn btn-p btn-full btn-sm" id="btnTx" onclick="transcribeFile()" style="margin-top:7px;display:none">🔄 Transcrever com Whisper</button>
+        <div class="upload-info" id="fileInfo"></div>
+        <button onclick="transcribeFile()" id="btnTx" style="display:none;margin-top:8px;width:100%;padding:7px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer">
+          Transcrever com Whisper
+        </button>
       </div>
     </div>
 
-    <div class="sec transcript-box" style="flex:1">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
-        <div class="sec-title" style="margin:0">Transcrição</div>
-        <div class="live-badge" id="liveBadge"><div class="ldot"></div>AO VIVO</div>
+    <!-- Transcript -->
+    <div class="tx-section">
+      <div class="tx-header">
+        <div class="tx-label">Transcrição</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="live-badge" id="liveBadge"><div class="ldot"></div>AO VIVO</div>
+          <button class="tx-clear" onclick="clearTx()" title="Limpar">✕</button>
+        </div>
       </div>
-      <div class="warn-banner" id="speechWarn">⚠️ Navegador não suporta reconhecimento de voz. Use Chrome ou modo Arquivo.</div>
-      <textarea class="transcript-area" id="txArea" placeholder="A transcrição aparecerá aqui...&#10;&#10;Clique 🔴 Gravar para iniciar."></textarea>
+      <div class="warn-note" id="warnNote">⚠️ Reconhecimento de voz requer Chrome ou Edge.</div>
+      <textarea class="tx-area" id="txArea" placeholder="Transcrição da sessão aparecerá aqui..."></textarea>
     </div>
+
   </div>
 
-  <!-- RIGHT -->
-  <div class="right">
-    <div class="tabs" id="tabs"></div>
-    <div class="toolbar">
-      <button class="btn-gen" id="btnGen" onclick="generate()">
-        <span class="btn-icon">✨</span><div class="spin"></div>Gerar com IA
-      </button>
-      <span class="doc-label" id="docLabel"></span>
-      <div class="sp"></div>
-      <button class="btn btn-g btn-sm" onclick="copyDoc()">📋 Copiar</button>
-      <button class="btn btn-g btn-sm" onclick="printDoc()">🖨 Imprimir</button>
-      <button class="btn btn-g btn-sm" onclick="clearDoc()" title="Limpar">🗑</button>
-    </div>
+  <!-- MAIN -->
+  <div class="main">
+    <div class="doc-tabs" id="docTabs"></div>
+
     <div class="editor-wrap">
-      <textarea class="editor" id="editor" placeholder="Selecione um tipo de documento e clique em ✨ Gerar com IA.&#10;&#10;O texto gerado será exibido aqui e pode ser editado livremente."></textarea>
-      <div style="font-size:.72rem;color:var(--text3)">💡 Revise o conteúdo gerado antes de usar em contexto clínico.</div>
-    </div>
-    <div class="bottom-bar">
-      <span class="char-count" id="chars">0 caracteres</span>
-      <div class="sp"></div>
-      <button class="btn btn-g btn-sm" onclick="generateAll()">⚡ Gerar todos</button>
+      <div class="editor-card">
+        <div class="editor-bar">
+          <button class="btn-gen" id="btnGen" onclick="generate()">
+            <span class="gen-icon">✨</span><div class="spin"></div>
+            Gerar documento
+          </button>
+          <span class="doc-name" id="docName"></span>
+          <div class="bar-space"></div>
+          <button class="icon-btn" onclick="copyDoc()" title="Copiar">📋</button>
+          <button class="icon-btn" onclick="printDoc()" title="Imprimir / PDF">🖨</button>
+          <button class="icon-btn" onclick="clearDoc()" title="Limpar">🗑</button>
+        </div>
+        <div class="editor-body">
+          <textarea class="editor-ta" id="editor" placeholder="Selecione um documento acima e clique em ✨ Gerar documento.&#10;&#10;O texto gerado pode ser editado livremente."></textarea>
+        </div>
+        <div class="editor-foot">
+          <span class="chars" id="chars">0 caracteres</span>
+          <div class="foot-space"></div>
+          <button class="gen-all" onclick="generateAll()">Gerar todos</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- Toasts -->
 <div class="toasts" id="toasts"></div>
 
-<!-- Keys Modal -->
+<!-- MODAL -->
 <div class="overlay" id="overlay">
   <div class="modal">
-    <h3>⚙️ Chaves de API</h3>
-    <div class="info-box" style="margin-bottom:12px">
-      🤖 <strong>O app busca chaves automaticamente</strong> do repositório público <strong>github.com/alistaitsacle/free-llm-api-keys</strong> (atualizado 3-5× por dia). Você não precisa fazer nada.
+    <div class="m-title">Chaves de API</div>
+    <div class="auto-box">
+      🤖 O app busca chaves automaticamente do repositório público <strong>alistaitsacle/free-llm-api-keys</strong>, atualizado várias vezes ao dia. Nenhuma configuração necessária.
     </div>
-    <p>Se as chaves automáticas estiverem esgotadas, você pode colar suas próprias abaixo como backup (opcional):</p>
-    <div class="field">
-      <label>Chaves próprias — opcional (sk-xxxxx, uma por linha)</label>
-      <textarea id="keysInput" style="height:110px;font-family:monospace;font-size:.75rem" placeholder="Deixe vazio para usar chaves automáticas&#10;&#10;sk-xxxxxxxxxxxxxx&#10;sk-yyyyyyyyyyyyyy"></textarea>
-    </div>
-    <div class="info-box">
-      🔐 Chaves próprias ficam apenas no <strong>seu navegador</strong> (localStorage). Nunca vão para o servidor.
-    </div>
-    <div class="modal-foot">
-      <button class="btn btn-g" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-p" onclick="saveKeys()">💾 Salvar</button>
+    <div class="m-desc">Adicione suas próprias chaves como backup (opcional):</div>
+    <label class="m-label">Chaves deepseek-chat — uma por linha</label>
+    <textarea class="m-ta" id="keysInput" placeholder="Deixe vazio para usar chaves automáticas&#10;&#10;sk-xxxxxxxxxxxxxx"></textarea>
+    <div class="m-footer">
+      <button class="m-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="m-save" onclick="saveKeys()">Salvar</button>
     </div>
   </div>
 </div>
@@ -241,306 +349,291 @@
 <iframe id="pf" style="display:none"></iframe>
 
 <script>
-// ── Config ──────────────────────────────────────────────────────────────────
-const DOC_TYPES = [
-  {id:'anamnese',     label:'Anamnese'},
-  {id:'evolucao',     label:'Evolução'},
-  {id:'soap',         label:'SOAP'},
-  {id:'relatorio',    label:'Relatório'},
-  {id:'declaracao',   label:'Declaração'},
-  {id:'resumo',       label:'Resumo'},
-  {id:'hipoteses',    label:'Hipóteses'},
-  {id:'plano_terapeutico', label:'Plano Terap.'},
+const DOCS = [
+  { id:'anamnese',         label:'Anamnese' },
+  { id:'evolucao',         label:'Evolução' },
+  { id:'soap',             label:'SOAP' },
+  { id:'relatorio',        label:'Relatório' },
+  { id:'declaracao',       label:'Declaração' },
+  { id:'resumo',           label:'Resumo' },
+  { id:'hipoteses',        label:'Hipóteses' },
+  { id:'plano_terapeutico',label:'Plano Terap.' },
 ];
-const DOC_LABELS = {
+const FULL = {
   anamnese:'Anamnese Psicológica', evolucao:'Evolução de Sessão', soap:'Nota SOAP',
   relatorio:'Relatório Psicológico', declaracao:'Declaração de Comparecimento',
-  resumo:'Resumo da Sessão', hipoteses:'Hipóteses Clínicas e Temas Centrais',
+  resumo:'Resumo da Sessão', hipoteses:'Hipóteses Clínicas',
   plano_terapeutico:'Plano Terapêutico',
 };
 
-let activeDoc = 'anamnese';
-const docStore = {};
+let active = 'anamnese';
+const store = {};
 
-// ── Init ────────────────────────────────────────────────────────────────────
+// ── Init ─────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   buildTabs();
-  document.getElementById('sessionDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('ptDate').value = new Date().toISOString().slice(0,10);
   document.getElementById('editor').addEventListener('input', updateChars);
   loadLocal();
   checkStatus();
   startClock();
-  // Pre-fill keys modal from localStorage
   const saved = getKeys();
   if (saved.length) document.getElementById('keysInput').value = saved.join('\n');
 });
 
-// ── Tabs ─────────────────────────────────────────────────────────────────────
+// ── Tabs ──────────────────────────────────
 function buildTabs() {
-  const c = document.getElementById('tabs');
-  DOC_TYPES.forEach(({id, label}) => {
+  const c = document.getElementById('docTabs');
+  DOCS.forEach(({ id, label }) => {
     const b = document.createElement('button');
-    b.className = 'tab' + (id === activeDoc ? ' active' : '');
+    b.className = 'doc-tab' + (id === active ? ' on' : '');
     b.textContent = label; b.dataset.id = id;
     b.onclick = () => switchDoc(id);
     c.appendChild(b);
   });
-  updateLabel();
+  updateDocName();
 }
 function switchDoc(id) {
-  docStore[activeDoc] = document.getElementById('editor').value;
-  activeDoc = id;
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.id === id));
-  document.getElementById('editor').value = docStore[id] || '';
-  updateChars(); updateLabel();
+  store[active] = document.getElementById('editor').value;
+  active = id;
+  document.querySelectorAll('.doc-tab').forEach(t => t.classList.toggle('on', t.dataset.id === id));
+  document.getElementById('editor').value = store[id] || '';
+  updateChars(); updateDocName();
 }
-function updateLabel() { document.getElementById('docLabel').textContent = DOC_LABELS[activeDoc] || activeDoc; }
+function updateDocName() { document.getElementById('docName').textContent = FULL[active] || active; }
 function updateChars() {
   const n = document.getElementById('editor').value.length;
-  document.getElementById('chars').textContent = n.toLocaleString('pt-BR') + ' caracteres';
+  document.getElementById('chars').textContent = n ? n.toLocaleString('pt-BR') + ' caracteres' : '';
 }
 
-// ── Clock ────────────────────────────────────────────────────────────────────
+// ── Clock ─────────────────────────────────
 let t0 = Date.now();
 function startClock() {
   setInterval(() => {
     const s = Math.floor((Date.now()-t0)/1000);
-    document.getElementById('timer').textContent = `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+    document.getElementById('timer').textContent =
+      `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
   }, 1000);
 }
 
-// ── Keys ─────────────────────────────────────────────────────────────────────
+// ── Context toggle ────────────────────────
+function toggleCtx() {
+  const ta = document.getElementById('ptCtx');
+  const ar = document.getElementById('ctxArrow');
+  ta.classList.toggle('open');
+  ar.textContent = ta.classList.contains('open') ? '▾' : '▸';
+}
+
+// ── Keys ──────────────────────────────────
 function getKeys() {
-  const v = localStorage.getItem('psicodoct_keys') || '';
-  return v.split('\n').map(k=>k.trim()).filter(Boolean);
+  return (localStorage.getItem('psicodoct_keys') || '').split('\n').map(k=>k.trim()).filter(Boolean);
 }
 function keysHeader() { return getKeys().join(','); }
 function openModal() { document.getElementById('overlay').classList.add('open'); }
 function closeModal() { document.getElementById('overlay').classList.remove('open'); }
 function saveKeys() {
-  const val = document.getElementById('keysInput').value;
-  localStorage.setItem('psicodoct_keys', val);
-  toast('✅ Chaves salvas!', 'ok');
-  closeModal();
-  checkStatus();
+  localStorage.setItem('psicodoct_keys', document.getElementById('keysInput').value);
+  toast('Chaves salvas', 'ok'); closeModal(); checkStatus();
 }
-document.getElementById('overlay').addEventListener('click', e => { if(e.target===document.getElementById('overlay')) closeModal(); });
+document.getElementById('overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('overlay')) closeModal();
+});
 
+// ── Status ────────────────────────────────
 async function checkStatus() {
-  const dot = document.getElementById('apiBadge');
-  const label = document.getElementById('apiLabel');
+  const dot = document.getElementById('sDot');
+  const lbl = document.getElementById('sLabel');
   try {
-    const headers = { 'Content-Type': 'application/json' };
-    const userKeys = keysHeader();
-    if (userKeys) headers['X-Keys'] = userKeys;
-    const r = await fetch('/api/status', { headers });
-    const d = await r.json();
+    const h = {};
+    const uk = keysHeader();
+    if (uk) h['X-Keys'] = uk;
+    const d = await fetch('/api/status', { headers: h }).then(r => r.json());
     if (d.has_keys) {
-      dot.className = 'api-dot';
-      label.textContent = d.source === 'auto'
-        ? `🤖 Auto (${d.count} chaves)`
-        : `✅ ${d.count} chave${d.count !== 1 ? 's' : ''}`;
+      dot.className = 's-dot';
+      lbl.textContent = d.source === 'auto' ? `Auto · ${d.count} chaves` : `${d.count} chave${d.count!==1?'s':''}`;
     } else {
-      dot.className = 'api-dot warn';
-      label.textContent = '⚠️ Sem chaves';
+      dot.className = 's-dot warn'; lbl.textContent = 'Sem chaves';
     }
-  } catch {
-    dot.className = 'api-dot bad';
-    label.textContent = '⚠️ Offline';
-  }
+  } catch { dot.className = 's-dot bad'; lbl.textContent = 'Offline'; }
 }
 
-// ── Live Transcription ────────────────────────────────────────────────────────
-let recognition=null, isRec=false, accumulated='', curMode='live';
+// ── Recording ─────────────────────────────
+let recog = null, isRec = false, accumulated = '', mode = 'live';
 
 function setMode(m) {
-  curMode=m;
-  document.getElementById('livePanel').style.display = m==='live'?'block':'none';
-  document.getElementById('filePanel').style.display = m==='file'?'block':'none';
-  document.getElementById('modeLive').classList.toggle('active', m==='live');
-  document.getElementById('modeFile').classList.toggle('active', m==='file');
+  mode = m;
+  document.getElementById('modeLive').classList.toggle('on', m==='live');
+  document.getElementById('modeFile').classList.toggle('on', m==='file');
+  document.getElementById('filePanel').style.display = m==='file' ? 'block' : 'none';
+  if (m==='live' && isRec) stopRecord();
 }
 
-function startLive() {
+function toggleRecord() {
+  if (mode !== 'live') return;
+  isRec ? stopRecord() : startRecord();
+}
+
+function startRecord() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { document.getElementById('speechWarn').classList.add('show'); return; }
-  recognition = new SR();
-  recognition.lang='pt-BR'; recognition.continuous=true; recognition.interimResults=true;
-  recognition.onresult = e => {
-    let interim='';
-    for (let i=e.resultIndex;i<e.results.length;i++) {
-      if (e.results[i].isFinal) accumulated += e.results[i][0].transcript+' ';
+  if (!SR) { document.getElementById('warnNote').classList.add('show'); return; }
+  recog = new SR();
+  recog.lang = 'pt-BR'; recog.continuous = true; recog.interimResults = true;
+  recog.onresult = e => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) accumulated += e.results[i][0].transcript + ' ';
       else interim = e.results[i][0].transcript;
     }
-    document.getElementById('txArea').value = accumulated+(interim?`[${interim}]`:'');
-    const ta=document.getElementById('txArea'); ta.scrollTop=ta.scrollHeight;
+    const ta = document.getElementById('txArea');
+    ta.value = accumulated + (interim ? `[${interim}]` : '');
+    ta.scrollTop = ta.scrollHeight;
   };
-  recognition.onerror = e => { if(e.error!=='no-speech') toast('Erro mic: '+e.error,'err'); };
-  recognition.onend = () => { if(isRec) recognition.start(); };
-  isRec=true; recognition.start();
-  document.getElementById('btnRec').disabled=true;
-  document.getElementById('btnStop').disabled=false;
-  document.getElementById('waveform').classList.add('active');
+  recog.onerror = e => { if (e.error !== 'no-speech') toast('Erro: ' + e.error, 'err'); };
+  recog.onend = () => { if (isRec) recog.start(); };
+  isRec = true; recog.start();
+  document.getElementById('recBtn').classList.add('active');
+  document.getElementById('recBtn').textContent = '⏹';
+  document.getElementById('recStatus').textContent = 'Gravando...';
+  document.getElementById('recStatus').classList.add('live');
   document.getElementById('liveBadge').classList.add('show');
   document.getElementById('timer').classList.add('rec');
-  toast('🔴 Gravação iniciada','ok');
 }
 
-function stopLive() {
-  isRec=false;
-  if(recognition){recognition.stop();recognition=null;}
-  document.getElementById('btnRec').disabled=false;
-  document.getElementById('btnStop').disabled=true;
-  document.getElementById('waveform').classList.remove('active');
+function stopRecord() {
+  isRec = false;
+  if (recog) { recog.stop(); recog = null; }
+  document.getElementById('recBtn').classList.remove('active');
+  document.getElementById('recBtn').textContent = '🎙';
+  document.getElementById('recStatus').textContent = 'Clique para gravar';
+  document.getElementById('recStatus').classList.remove('live');
   document.getElementById('liveBadge').classList.remove('show');
   document.getElementById('timer').classList.remove('rec');
-  const ta=document.getElementById('txArea');
-  ta.value=ta.value.replace(/\[.*?\]/g,'').trim();
-  accumulated=ta.value+' ';
-  toast('⏹ Gravação encerrada','ok');
+  const ta = document.getElementById('txArea');
+  ta.value = ta.value.replace(/\[.*?\]/g, '').trim();
+  accumulated = ta.value + ' ';
+  toast('Gravação encerrada', 'ok');
 }
 
 function clearTx() {
-  if(!confirm('Limpar transcrição?'))return;
-  accumulated=''; document.getElementById('txArea').value='';
+  if (!confirm('Limpar transcrição?')) return;
+  accumulated = ''; document.getElementById('txArea').value = '';
 }
 
-// ── File Transcription ────────────────────────────────────────────────────────
-let uploadedFile=null;
-function handleFile(input) {
-  uploadedFile=input.files[0];
-  if(!uploadedFile)return;
-  const mb=(uploadedFile.size/1024/1024).toFixed(1);
-  if(uploadedFile.size>4*1024*1024){toast('Arquivo muito grande (>4 MB). Divida o áudio em partes.','warn');return;}
-  document.getElementById('fileStatus').textContent=`📁 ${uploadedFile.name} (${mb} MB)`;
-  document.getElementById('fileStatus').style.display='block';
-  document.getElementById('btnTx').style.display='flex';
+// ── File upload ───────────────────────────
+let uploadFile = null;
+function onFileChange(input) {
+  uploadFile = input.files[0];
+  if (!uploadFile) return;
+  if (uploadFile.size > 4*1024*1024) { toast('Arquivo > 4 MB. Divida o áudio.', 'warn'); return; }
+  const info = document.getElementById('fileInfo');
+  info.textContent = `${uploadFile.name} · ${(uploadFile.size/1024/1024).toFixed(1)} MB`;
+  info.classList.add('show');
+  document.getElementById('btnTx').style.display = 'block';
 }
-
 async function transcribeFile() {
-  if(!uploadedFile)return;
-  const btn=document.getElementById('btnTx');
-  btn.disabled=true; btn.textContent='⏳ Transcrevendo...';
-  const st=document.getElementById('fileStatus');
+  if (!uploadFile) return;
+  const btn = document.getElementById('btnTx');
+  btn.disabled = true; btn.textContent = 'Transcrevendo...';
   try {
-    const ab=await uploadedFile.arrayBuffer();
-    const b64=btoa(String.fromCharCode(...new Uint8Array(ab)));
-    st.textContent='🔄 Enviando para Whisper...';
-    const headers={'Content-Type':'application/json'};
-    const uk=keysHeader(); if(uk) headers['X-Keys']=uk;
-    const r=await fetch('/api/transcribe',{
-      method:'POST',
-      headers,
-      body:JSON.stringify({audio_b64:b64,filename:uploadedFile.name}),
-    });
-    const d=await r.json();
-    if(!r.ok)throw new Error(d.error||r.statusText);
-    document.getElementById('txArea').value=d.transcript;
-    accumulated=d.transcript+' ';
-    st.textContent=`✅ ${d.transcript.split(' ').length} palavras transcritas`;
-    toast('✅ Transcrição concluída!','ok');
-  } catch(e) {
-    st.textContent='❌ '+e.message;
-    toast('Erro: '+e.message,'err');
-  } finally {
-    btn.disabled=false; btn.textContent='🔄 Transcrever com Whisper';
-  }
+    const ab = await uploadFile.arrayBuffer();
+    const b64 = btoa(String.fromCharCode(...new Uint8Array(ab)));
+    const h = { 'Content-Type': 'application/json' };
+    const uk = keysHeader(); if (uk) h['X-Keys'] = uk;
+    const r = await fetch('/api/transcribe', { method: 'POST', headers: h, body: JSON.stringify({ audio_b64: b64, filename: uploadFile.name }) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || r.statusText);
+    document.getElementById('txArea').value = d.transcript;
+    accumulated = d.transcript + ' ';
+    toast('Transcrição concluída', 'ok');
+    document.getElementById('fileInfo').textContent = `✓ ${d.transcript.split(' ').length} palavras`;
+  } catch(e) { toast('Erro: ' + e.message, 'err'); }
+  finally { btn.disabled = false; btn.textContent = 'Transcrever com Whisper'; }
 }
 
-// ── Generate ──────────────────────────────────────────────────────────────────
+// ── Generate ──────────────────────────────
 async function generate() {
-  const tx=document.getElementById('txArea').value.trim();
-  if(!tx){toast('⚠️ Transcrição vazia.','warn');return;}
-
-  const btn=document.getElementById('btnGen');
-  btn.classList.add('generating'); btn.disabled=true;
+  const tx = document.getElementById('txArea').value.trim();
+  if (!tx) { toast('Transcrição vazia', 'warn'); return; }
+  const btn = document.getElementById('btnGen');
+  btn.classList.add('generating'); btn.disabled = true;
   try {
-    const headers={'Content-Type':'application/json'};
-    const uk=keysHeader(); if(uk) headers['X-Keys']=uk;
-    const r=await fetch('/api/generate',{
-      method:'POST',
-      headers,
-      body:JSON.stringify({
-        transcript:tx, document_type:activeDoc,
-        patient_name:document.getElementById('patientName').value.trim(),
-        session_date:document.getElementById('sessionDate').value,
-        psychologist_name:document.getElementById('psychName').value.trim(),
-        additional_context:document.getElementById('ctx').value.trim(),
+    const h = { 'Content-Type': 'application/json' };
+    const uk = keysHeader(); if (uk) h['X-Keys'] = uk;
+    const r = await fetch('/api/generate', {
+      method: 'POST', headers: h,
+      body: JSON.stringify({
+        transcript: tx, document_type: active,
+        patient_name: document.getElementById('ptName').value.trim(),
+        session_date: document.getElementById('ptDate').value,
+        psychologist_name: document.getElementById('ptCrp').value.trim(),
+        additional_context: document.getElementById('ptCtx').value.trim(),
       }),
     });
-    const d=await r.json();
-    if(!r.ok)throw new Error(d.error||r.statusText);
-    docStore[activeDoc]=d.document;
-    document.getElementById('editor').value=d.document;
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || r.statusText);
+    store[active] = d.document;
+    document.getElementById('editor').value = d.document;
     updateChars(); saveLocal();
-    toast(`✅ ${DOC_LABELS[activeDoc]} gerado!`,'ok');
-  } catch(e) {
-    toast('Erro ao gerar: '+e.message,'err');
-  } finally {
-    btn.classList.remove('generating'); btn.disabled=false;
-  }
+    toast(`${FULL[active]} gerado`, 'ok');
+  } catch(e) { toast('Erro: ' + e.message, 'err'); }
+  finally { btn.classList.remove('generating'); btn.disabled = false; }
 }
 
 async function generateAll() {
-  if(!confirm(`Gerar todos os ${DOC_TYPES.length} documentos? Pode demorar alguns minutos.`))return;
-  const tx=document.getElementById('txArea').value.trim();
-  if(!tx){toast('⚠️ Transcrição vazia.','warn');return;}
-  toast('⏳ Gerando todos os documentos...','');
-  for(const {id} of DOC_TYPES){switchDoc(id);await generate();await new Promise(r=>setTimeout(r,600));}
-  toast('✅ Todos os documentos gerados!','ok');
+  if (!confirm(`Gerar todos os ${DOCS.length} documentos?`)) return;
+  if (!document.getElementById('txArea').value.trim()) { toast('Transcrição vazia', 'warn'); return; }
+  toast('Gerando todos os documentos...', '');
+  for (const { id } of DOCS) { switchDoc(id); await generate(); await new Promise(r=>setTimeout(r,500)); }
+  toast('Todos os documentos gerados!', 'ok');
 }
 
-// ── Editor actions ────────────────────────────────────────────────────────────
+// ── Editor ────────────────────────────────
 function copyDoc() {
-  const t=document.getElementById('editor').value;
-  if(!t.trim()){toast('Editor vazio.','warn');return;}
-  navigator.clipboard.writeText(t).then(()=>toast('📋 Copiado!','ok'),()=>toast('Erro ao copiar.','err'));
+  const t = document.getElementById('editor').value;
+  if (!t.trim()) { toast('Editor vazio', 'warn'); return; }
+  navigator.clipboard.writeText(t).then(() => toast('Copiado!', 'ok'));
 }
 function clearDoc() {
-  if(!document.getElementById('editor').value.trim())return;
-  if(!confirm('Limpar documento?'))return;
-  document.getElementById('editor').value=''; docStore[activeDoc]=''; updateChars();
+  if (!document.getElementById('editor').value.trim()) return;
+  if (!confirm('Limpar documento?')) return;
+  document.getElementById('editor').value = ''; store[active] = ''; updateChars();
 }
 function printDoc() {
-  const t=document.getElementById('editor').value;
-  if(!t.trim()){toast('Editor vazio.','warn');return;}
-  const patient=document.getElementById('patientName').value||'Paciente';
-  const date=document.getElementById('sessionDate').value||new Date().toLocaleDateString('pt-BR');
-  const psy=document.getElementById('psychName').value;
-  const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${DOC_LABELS[activeDoc]}</title>
-  <style>body{font-family:Arial,sans-serif;font-size:12pt;padding:40px;max-width:800px;margin:0 auto}
-  h1{font-size:14pt;color:#2b4c8c;margin-bottom:4px}.meta{font-size:10pt;color:#555;margin-bottom:20px;border-bottom:1px solid #ddd;padding-bottom:10px}
-  pre{white-space:pre-wrap;font-family:Arial,sans-serif;line-height:1.8;font-size:11pt}@media print{body{padding:20px}}</style>
-  </head><body><h1>${DOC_LABELS[activeDoc]}</h1>
-  <div class="meta">Paciente: ${patient} | Data: ${date}${psy?' | Psicólogo(a): '+psy:''}</div>
-  <pre>${t.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre></body></html>`;
-  const f=document.getElementById('pf');
+  const t = document.getElementById('editor').value;
+  if (!t.trim()) { toast('Editor vazio', 'warn'); return; }
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${FULL[active]}</title>
+  <style>body{font-family:Arial,sans-serif;font-size:12pt;padding:40px;max-width:800px;margin:auto}
+  h1{font-size:13pt;color:#1e293b;margin-bottom:4px}.meta{font-size:10pt;color:#64748b;border-bottom:1px solid #e2e8f0;padding-bottom:10px;margin-bottom:20px}
+  pre{white-space:pre-wrap;font-family:Arial,sans-serif;line-height:1.8}</style></head><body>
+  <h1>${FULL[active]}</h1>
+  <div class="meta">${document.getElementById('ptName').value||'Paciente'} · ${document.getElementById('ptDate').value||''}</div>
+  <pre>${t.replace(/</g,'&lt;')}</pre></body></html>`;
+  const f = document.getElementById('pf');
   f.style.display='block';
   f.contentDocument.open(); f.contentDocument.write(html); f.contentDocument.close();
   f.contentWindow.focus(); f.contentWindow.print();
   setTimeout(()=>f.style.display='none',2000);
 }
 
-// ── Local storage ─────────────────────────────────────────────────────────────
+// ── Storage ───────────────────────────────
 function saveLocal() {
-  try { localStorage.setItem('psicodoct_docs',JSON.stringify(docStore)); } catch{}
+  try { localStorage.setItem('psd_docs', JSON.stringify(store)); } catch{}
 }
 function loadLocal() {
   try {
-    const d=localStorage.getItem('psicodoct_docs');
-    if(d) Object.assign(docStore,JSON.parse(d));
-    if(docStore[activeDoc]){document.getElementById('editor').value=docStore[activeDoc];updateChars();}
+    const d = localStorage.getItem('psd_docs');
+    if (d) Object.assign(store, JSON.parse(d));
+    if (store[active]) { document.getElementById('editor').value = store[active]; updateChars(); }
   } catch{}
 }
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
+// ── Toast ─────────────────────────────────
 function toast(msg, type='') {
-  const el=document.createElement('div');
-  el.className='toast'+(type?' '+type:'');
-  el.textContent=msg;
-  const c=document.getElementById('toasts');
-  c.appendChild(el);
-  setTimeout(()=>el.remove(),3200);
+  const el = document.createElement('div');
+  el.className = 'toast' + (type ? ' '+type : '');
+  el.textContent = msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => el.remove(), 3000);
 }
 </script>
 </body>
